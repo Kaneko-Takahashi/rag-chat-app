@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { retrieveRelevantChunks } from '@/lib/rag/retriever';
 import { supabase } from '@/lib/supabase';
 
 const anthropic = new Anthropic({
@@ -8,26 +9,34 @@ const anthropic = new Anthropic({
 export async function POST(req: Request) {
   const { message } = await req.json();
 
-  // 1. 関連ドキュメントを検索（RAG）
+  // 1. RAG: 関連ドキュメントを検索
   let contextText = '';
+  let sources: { content: string; similarity: number }[] = [];
   try {
-    const { data: chunks } = await supabase.rpc('match_documents', {
-      query_embedding: [], // 後でEmbedding機能を追加
-      match_threshold: 0.7,
-      match_count: 5,
-    });
-    if (chunks) {
+    console.log('RAG検索開始:', message);
+    const chunks = await retrieveRelevantChunks(message);
+    if (chunks && chunks.length > 0) {
+      sources = chunks.map((chunk: any) => ({
+        content: chunk.content.substring(0, 100) + '...',
+        similarity: Math.round(chunk.similarity * 100),
+      }));
       contextText = chunks.map((chunk: any) => chunk.content).join('\n\n---\n\n');
     }
   } catch (error) {
-    console.log('RAG検索スキップ（Embedding未設定）');
+    console.log('RAG検索スキップ:', error);
   }
 
-  // 2. Claude APIで回答生成
+  // 2. プロンプト構築
   const systemPrompt = contextText
-    ? `あなたは社内ナレッジベースのAIアシスタントです。以下のコンテキスト情報を基に回答してください。\n\nコンテキスト:\n${contextText}`
+    ? `あなたは社内ナレッジベースのAIアシスタントです。
+以下のコンテキスト情報を基に、正確に回答してください。
+コンテキストに含まれない情報については「その情報は登録されたドキュメントに見つかりませんでした」と回答してください。
+
+## コンテキスト:
+${contextText}`
     : 'あなたは親切なAIアシスタントです。質問に丁寧に回答してください。';
 
+  // 3. Claude APIで回答生成
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
@@ -41,11 +50,15 @@ export async function POST(req: Request) {
     ? response.content[0].text
     : '';
 
-  // 3. チャット履歴を保存
+  // 4. チャット履歴を保存
   await supabase.from('chat_messages').insert([
     { role: 'user', content: message },
     { role: 'assistant', content: assistantMessage },
   ]);
-
-  return Response.json({ message: assistantMessage });
+  
+  console.log('ソース件数:', sources.length, sources);
+  return Response.json({
+    message: assistantMessage,
+    sources: sources,
+  });
 }

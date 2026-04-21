@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 ナレッジQA チャットボット（RAG Chat App）
 
-## Getting Started
+RAG（検索拡張生成）を搭載した社内ナレッジQAチャットボットです。
+社内ドキュメントをアップロードし、その内容に基づいてAIが質問に回答します。
 
-First, run the development server:
+## デモ画面
 
-```bash
+### チャット画面
+- AIが社内ドキュメントに基づいて回答
+- 参照ソースの表示（どのドキュメントから回答したか）
+- チャット履歴の保存・削除
+
+### ドキュメント管理画面
+- テキスト入力での登録
+- ファイルのドラッグ＆ドロップでアップロード
+- 対応形式: TXT, PDF, Excel(.xlsx), PowerPoint(.pptx), Word(.docx)
+- ドキュメントの削除
+
+## 技術スタック
+
+| レイヤー | 技術 |
+|----------|------|
+| フロントエンド | Next.js + TypeScript |
+| UIライブラリ | Tailwind CSS + shadcn/ui |
+| バックエンド | Next.js API Routes |
+| データベース | Supabase (PostgreSQL + pgvector) |
+| LLM | Claude API (Anthropic) |
+| バージョン管理 | Git + GitHub |
+
+## 主な機能
+
+- RAG（Retrieval-Augmented Generation）による社内ドキュメント検索・回答生成
+- チャットボット（社内QA対応）
+- ドキュメント管理（登録・一覧・削除）
+- ファイルアップロード（TXT / PDF / Excel / PowerPoint / Word）
+- チャット履歴管理
+- 参照ソース引用表示
+- レスポンシブデザイン（PC・スマホ対応）
+
+## セットアップ手順
+
+### 1. リポジトリをクローン
+
+git clone https://github.com/Kaneko-Takahashi/rag-chat-app.git
+cd rag-chat-app
+
+### 2. パッケージをインストール
+
+npm install
+
+### 3. 環境変数を設定
+
+.env.local ファイルを作成し、以下を設定してください。
+
+ANTHROPIC_API_KEY=あなたのClaude APIキー
+NEXT_PUBLIC_SUPABASE_URL=あなたのSupabase URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=あなたのSupabase Anon Key
+
+### 4. Supabase データベースをセットアップ
+
+Supabase の SQL Editor で以下を実行してください。
+
+1. pgvector拡張の有効化
+2. documents テーブルの作成
+3. document_chunks テーブルの作成
+4. chat_messages テーブルの作成
+
+詳細は docs/setup-guide.md を参照してください。
+
+### 5. 開発サーバーを起動
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで http://localhost:3000 にアクセスしてください。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## プロジェクト構成
+rag-chat-app/
+├── app/
+│ ├── api/
+│ │ ├── chat/ # チャットAPI（Claude + RAG連携）
+│ │ └── documents/ # ドキュメントCRUD・アップロードAPI
+│ ├── documents/ # ドキュメント管理画面
+│ └── page.tsx # チャットUI（メイン画面）
+├── lib/
+│ ├── rag/
+│ │ ├── embeddings.ts # チャンク分割・ドキュメント取込
+│ │ └── retriever.ts # キーワード検索
+│ └── supabase.ts # Supabase接続設定
+├── docs/
+│ └── setup-guide.md # セットアップガイド
+└── supabase/
+└── functions/ # Edge Functions
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ドキュメント
 
-## Learn More
+詳細なセットアップ手順・用語集は docs/setup-guide.md に記載しています。
 
-To learn more about Next.js, take a look at the following resources:
+## 作者
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Kaneko-Takahashi

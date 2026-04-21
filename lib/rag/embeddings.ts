@@ -18,24 +18,6 @@ export function splitIntoChunks(
   return chunks;
 }
 
-// Embedding生成（Supabase Edge Function経由）
-export async function generateEmbedding(text: string): Promise<number[]> {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/embed`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({ text }),
-    }
-  );
-
-  const data = await response.json();
-  return data.embedding;
-}
-
 // ドキュメントを取り込む関数
 export async function ingestDocument(title: string, content: string) {
   // 1. ドキュメントを保存
@@ -50,14 +32,11 @@ export async function ingestDocument(title: string, content: string) {
   // 2. チャンク分割
   const chunks = splitIntoChunks(content);
 
-  // 3. 各チャンクをEmbedding化して保存
+  // 3. 各チャンクを保存（Embeddingなし）
   for (const chunk of chunks) {
-    const embedding = await generateEmbedding(chunk);
-
     await supabase.from('document_chunks').insert({
       document_id: doc.id,
       content: chunk,
-      embedding: embedding,
     });
   }
 
