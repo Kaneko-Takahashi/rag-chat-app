@@ -19,11 +19,16 @@ export async function POST(req: Request) {
       text = await file.text();
 
     } else if (fileType === 'pdf') {
-      const pdfModule = await import('pdf-parse');
-      const pdfParse = pdfModule.default || pdfModule;
       const buffer = Buffer.from(await file.arrayBuffer());
-      const pdfData = await pdfParse(buffer);
-      text = pdfData.text;
+      const result = await officeparser.parseOffice(buffer);
+      if (result && typeof result === 'string') {
+        text = result;
+      } else if (result && typeof result.toString === 'function') {
+        text = result.toString();
+      } else {
+        text = String(result || '');
+      }
+      
 
     } else if (fileType === 'xlsx' || fileType === 'xls') {
       const XLSX = await import('xlsx');
