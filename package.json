@@ -19,7 +19,6 @@
     "next": "16.2.4",
     "officeparser": "^6.1.0",
     "pdf-parse": "^2.4.5",
-    "pdf-parse-new": "^2.0.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
