@@ -74,22 +74,23 @@ npm run dev
 ブラウザで http://localhost:3000 にアクセスしてください。
 
 ## プロジェクト構成
-rag-chat-app/
-├── app/
-│ ├── api/
-│ │ ├── chat/ # チャットAPI（Claude + RAG連携）
-│ │ └── documents/ # ドキュメントCRUD・アップロードAPI
-│ ├── documents/ # ドキュメント管理画面
-│ └── page.tsx # チャットUI（メイン画面）
-├── lib/
-│ ├── rag/
-│ │ ├── embeddings.ts # チャンク分割・ドキュメント取込
-│ │ └── retriever.ts # キーワード検索
-│ └── supabase.ts # Supabase接続設定
-├── docs/
-│ └── setup-guide.md # セットアップガイド
-└── supabase/
-└── functions/ # Edge Functions
+
+- app/ --- アプリケーション本体
+  - api/chat/route.ts --- チャットAPI（Claude + RAG連携）
+  - api/chat/history/route.ts --- チャット履歴API
+  - api/documents/route.ts --- ドキュメントCRUD API
+  - api/documents/upload/route.ts --- ファイルアップロードAPI
+  - api/documents/[id]/route.ts --- ドキュメント削除API
+  - documents/page.tsx --- ドキュメント管理画面
+  - page.tsx --- チャットUI（メイン画面）
+  - layout.tsx --- レイアウト設定
+- lib/ --- ライブラリ
+  - rag/embeddings.ts --- チャンク分割・ドキュメント取込
+  - rag/retriever.ts --- キーワード検索
+  - supabase.ts --- Supabase接続設定
+- docs/ --- ドキュメント
+  - setup-guide.md --- セットアップガイド
+- supabase/functions/embed/ --- Edge Functions
 
 ## ドキュメント
 
