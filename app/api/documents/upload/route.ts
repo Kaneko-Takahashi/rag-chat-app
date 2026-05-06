@@ -1,10 +1,19 @@
 import { ingestDocument } from '@/lib/rag/embeddings';
-import * as officeparser from 'officeparser';
+import { officeParseResultToText } from '@/lib/office-text';
+import { parseOffice } from 'officeparser';
+
+/** officeparser / pdfjs は Node ランタイムが前提（Edge では不可） */
+export const runtime = 'nodejs';
+
+/** 大きめファイルの解析時間確保（Vercel プランの上限に依存） */
+export const maxDuration = 60;
+
+const parserConfig = { outputErrorToConsole: false } as const;
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as File | null;
 
     if (!file) {
       return Response.json({ error: 'ファイルが必要です' }, { status: 400 });
@@ -14,22 +23,12 @@ export async function POST(req: Request) {
     const fileType = fileName.split('.').pop()?.toLowerCase();
     let text = '';
 
-    // ファイル形式に応じてテキスト抽出
     if (fileType === 'txt') {
       text = await file.text();
-
-    } else if (fileType === 'pdf') {
+    } else if (fileType === 'pdf' || fileType === 'docx' || fileType === 'pptx') {
       const buffer = Buffer.from(await file.arrayBuffer());
-      const result = await officeparser.parseOffice(buffer);
-      if (result && typeof result === 'string') {
-        text = result;
-      } else if (result && typeof result.toString === 'function') {
-        text = result.toString();
-      } else {
-        text = String(result || '');
-      }
-      
-
+      const result = await parseOffice(buffer, parserConfig);
+      text = officeParseResultToText(result);
     } else if (fileType === 'xlsx' || fileType === 'xls') {
       const XLSX = await import('xlsx');
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -41,24 +40,12 @@ export async function POST(req: Request) {
           return `【シート: ${name}】\n${XLSX.utils.sheet_to_txt(sheet)}`;
         })
         .join('\n\n');
-
-    } else if (fileType === 'pptx' || fileType === 'docx') {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const result = await officeparser.parseOffice(buffer);
-      if (result && typeof result.toText === 'function') {
-        text = result.toText();
-      } else if (result && result.content) {
-        text = result.content
-          .filter((item: any) => item.text)
-          .map((item: any) => item.text)
-          .join('\n');
-      } else {
-        text = JSON.stringify(result);
-      }
-
     } else {
       return Response.json(
-        { error: '対応していないファイル形式です（txt, pdf, xlsx, pptx, docx に対応）' },
+        {
+          error:
+            '対応していないファイル形式です（txt, pdf, xlsx, xls, pptx, docx に対応）',
+        },
         { status: 400 }
       );
     }
@@ -80,7 +67,11 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('アップロードエラー:', error);
     return Response.json(
-      { error: 'ファイルのアップロードに失敗しました' },
+      {
+        error: 'ファイルのアップロードに失敗しました',
+        detail:
+          error instanceof Error ? error.message : 'officeparser 等の処理でエラー',
+      },
       { status: 500 }
     );
   }
