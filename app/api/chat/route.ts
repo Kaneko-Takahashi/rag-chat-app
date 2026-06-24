@@ -48,7 +48,7 @@ ${contextText}`
 
     // 3. Claude APIで回答生成
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: 'user', content: message }],
